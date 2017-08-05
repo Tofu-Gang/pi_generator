@@ -2,7 +2,7 @@ __author__ = 'Tofu Gang'
 
 from sys import argv, exit
 from PyQt5.QtWidgets import QApplication
-from mainWindow import MainWindow
+from src.mainWindow import MainWindow
 
 
 

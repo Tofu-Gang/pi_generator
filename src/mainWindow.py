@@ -2,7 +2,7 @@ __author__ = 'Tofu Gang'
 
 from PyQt5.QtWidgets import QMainWindow, QGraphicsView
 from PyQt5.QtGui import QPainter
-from dataModel import DataModel
+from src.dataModel import DataModel
 
 
 
