@@ -1,15 +1,17 @@
 __author__ = 'Tofu Gang'
 
 from sys import argv, exit
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication
+from mainWindow import MainWindow
+
+
+
+################################################################################
 
 if __name__ == "__main__":
     app = QApplication(argv)
-    w = QWidget()
-    b = QLabel(w)
-    b.setText("Hello World!")
-    w.setGeometry(100, 100, 200, 50)
-    b.move(50, 20)
-    w.setWindowTitle('Hello World')
-    w.show()
+    window = MainWindow()
+    window.show()
     exit(app.exec_())
+
+################################################################################
