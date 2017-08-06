@@ -3,21 +3,17 @@ __author__ = 'Tofu Gang'
 from PyQt5.QtWidgets import QGraphicsScene
 from PyQt5.QtCore import QRectF, QPointF, Qt
 from math import pi, sin
-from random import randint
-from src.scales import SCALE_TYPES, ROOT_NOTES, SCALES
 from src.triangleButton import TriangleButton
 from src.generateButton import GenerateButton
 from src.textItem import TextItem
 from src.scaleTextItem import ScaleTextItem
+from src.pi import PiGenerator
 
 
 
 ################################################################################
 
 class DataModel(QGraphicsScene):
-    SCALE_TYPE_DEFAULT_INDEX = 0
-    ROOT_NOTE_DEFAULT_INDEX = 3
-
     SCENE_WIDTH = 798
     SCENE_HEIGHT = 598
 
@@ -59,30 +55,24 @@ class DataModel(QGraphicsScene):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._generator = PiGenerator()
         self.setSceneRect(QRectF(QPointF(-self.SCENE_WIDTH/2, -self.SCENE_HEIGHT/2),
                                  QPointF(self.SCENE_WIDTH/2, self.SCENE_HEIGHT/2)))
-        self._scaleTypeIndex = self.SCALE_TYPE_DEFAULT_INDEX
-        self._rootNoteIndex = self.ROOT_NOTE_DEFAULT_INDEX
-        self._soloLength = int(self._maxSoloLength()/2)
-        self._solo = None
 
         # scale type
         self.addItem(TextItem('Scale', TextItem.CENTER, self.SCALE_TYPE_LABEL_POS))
-
         scaleTypeLeftButton = TriangleButton(TriangleButton.LEFT)
         scaleTypeLeftButton.setPos(self.SCALE_TYPE_LEFT_BUTTON_POS)
-        scaleTypeLeftButton.clicked.connect(self._scaleTypeLeftButtonWasClicked)
+        scaleTypeLeftButton.clicked.connect(self._generator.setPreviousScaleType)
         self.addItem(scaleTypeLeftButton)
         scaleTypeRightButton = TriangleButton(TriangleButton.RIGHT)
         scaleTypeRightButton.setPos(self.SCALE_TYPE_RIGHT_BUTTON_POS)
-        scaleTypeRightButton.clicked.connect(self._scaleTypeRightButtonWasClicked)
+        scaleTypeRightButton.clicked.connect(self._generator.setNextScaleType)
         self.addItem(scaleTypeRightButton)
 
-        self._scaleTypeSelectedTextItem = TextItem(SCALE_TYPES[self._scaleTypeIndex], TextItem.CENTER, self.SCALE_TYPE_CENTER_POS)
-        self._scaleTypeLeftTextItem = TextItem(SCALE_TYPES[(self._scaleTypeIndex-1)%len(SCALE_TYPES)],
-                                               TextItem.LEFT, self.SCALE_TYPE_LEFT_POS)
-        self._scaleTypeRightTextItem = TextItem(SCALE_TYPES[(self._scaleTypeIndex+1)%len(SCALE_TYPES)],
-                                                TextItem.RIGHT, self.SCALE_TYPE_RIGHT_POS)
+        self._scaleTypeSelectedTextItem = TextItem(self._generator.scaleType, TextItem.CENTER, self.SCALE_TYPE_CENTER_POS)
+        self._scaleTypeLeftTextItem = TextItem(self._generator.previousScaleType, TextItem.LEFT, self.SCALE_TYPE_LEFT_POS)
+        self._scaleTypeRightTextItem = TextItem(self._generator.nextScaleType, TextItem.RIGHT, self.SCALE_TYPE_RIGHT_POS)
         self.addItem(self._scaleTypeSelectedTextItem)
         self.addItem(self._scaleTypeLeftTextItem)
         self.addItem(self._scaleTypeRightTextItem)
@@ -90,48 +80,45 @@ class DataModel(QGraphicsScene):
         # root note
         rootNoteLeftButton = TriangleButton(TriangleButton.LEFT)
         rootNoteLeftButton.setPos(self.ROOT_NOTE_LEFT_BUTTON_POS)
-        rootNoteLeftButton.clicked.connect(self._rootNoteLeftButtonWasClicked)
+        rootNoteLeftButton.clicked.connect(self._generator.setPreviousRootNote)
         self.addItem(rootNoteLeftButton)
         rootNoteRightButton = TriangleButton(TriangleButton.RIGHT)
         rootNoteRightButton.setPos(self.ROOT_NOTE_RIGHT_BUTTON_POS)
-        rootNoteRightButton.clicked.connect(self._rootNoteRightButtonWasClicked)
+        rootNoteRightButton.clicked.connect(self._generator.setNextRootNote)
         self.addItem(rootNoteRightButton)
 
-        self._rootNoteSelectedTextItem = TextItem(ROOT_NOTES[self._rootNoteIndex],
-                                                  TextItem.CENTER, self.ROOT_NOTE_CENTER_POS)
-        self._rootNoteLeftTextItem = TextItem(ROOT_NOTES[(self._rootNoteIndex-1)%len(ROOT_NOTES)],
-                                              TextItem.LEFT, self.ROOT_NOTE_LEFT_POS)
-        self._rootNoteRightTextItem = TextItem(ROOT_NOTES[(self._rootNoteIndex+1)%len(ROOT_NOTES)],
-                                               TextItem.RIGHT, self.ROOT_NOTE_RIGHT_POS)
+        self._rootNoteSelectedTextItem = TextItem(self._generator.rootNote, TextItem.CENTER, self.ROOT_NOTE_CENTER_POS)
+        self._rootNoteLeftTextItem = TextItem(self._generator.previousRootNote, TextItem.LEFT, self.ROOT_NOTE_LEFT_POS)
+        self._rootNoteRightTextItem = TextItem(self._generator.nextRootNote, TextItem.RIGHT, self.ROOT_NOTE_RIGHT_POS)
         self.addItem(self._rootNoteSelectedTextItem)
         self.addItem(self._rootNoteLeftTextItem)
         self.addItem(self._rootNoteRightTextItem)
 
         # scale
         self._scaleItem = ScaleTextItem()
+        self._scaleItem.setScale(self._generator.scale)
         self._scaleItem.setPos(self.SCALE_POS)
         self.addItem(self._scaleItem)
 
         # solo length
         self._soloLengthLabelTextItem = TextItem('Solo length', TextItem.LEFT, self.SOLO_LENGTH_LABEL_POS)
         self.addItem(self._soloLengthLabelTextItem)
-        self._soloLengthMaxLabelTextItem = TextItem('Max length: '+str(self._maxSoloLength()), TextItem.RIGHT, self.SOLO_LENGTH_MAX_POS)
+        self._soloLengthMaxLabelTextItem = TextItem('Max length: '+str(self._generator.maxSoloLength), TextItem.RIGHT, self.SOLO_LENGTH_MAX_POS)
         self.addItem(self._soloLengthMaxLabelTextItem)
-        self._soloLengthTextItem = TextItem(str(self._soloLength), TextItem.CENTER, self.SOLO_LENGTH_POS)
+        self._soloLengthTextItem = TextItem(str(self._generator.soloLength), TextItem.CENTER, self.SOLO_LENGTH_POS)
         self.addItem(self._soloLengthTextItem)
-        self._soloLengthLeftButton = TriangleButton(TriangleButton.LEFT)
-        self._soloLengthLeftButton.setPos(self.SOLO_LENGTH_LEFT_BUTTON_POS)
-        self._soloLengthLeftButton.clicked.connect(self._soloLengthLeftButtonWasClicked)
-        self.addItem(self._soloLengthLeftButton)
-        self._soloLengthRightButton = TriangleButton(TriangleButton.RIGHT)
-        self._soloLengthRightButton.setPos(self.SOLO_LENTGH_RIGHT_BUTTON_POS)
-        self._soloLengthRightButton.clicked.connect(self._soloLengthRightButtonWasClicked)
-        self.addItem(self._soloLengthRightButton)
+        soloLengthLeftButton = TriangleButton(TriangleButton.LEFT)
+        soloLengthLeftButton.setPos(self.SOLO_LENGTH_LEFT_BUTTON_POS)
+        soloLengthLeftButton.clicked.connect(self._generator.decreaseSoloLength)
+        self.addItem(soloLengthLeftButton)
+        soloLengthRightButton = TriangleButton(TriangleButton.RIGHT)
+        soloLengthRightButton.setPos(self.SOLO_LENTGH_RIGHT_BUTTON_POS)
+        soloLengthRightButton.clicked.connect(self._generator.increaseSoloLength)
+        self.addItem(soloLengthRightButton)
 
         # generate button
         generateButton = GenerateButton()
         generateButton.setPos(self.GENERATE_BUTTON_POS)
-        generateButton.clicked.connect(self._generateSolo)
         self.addItem(generateButton)
 
         # solo
@@ -171,103 +158,33 @@ class DataModel(QGraphicsScene):
                             self._soloTextItem3, self._soloTextItem4,
                             self._soloTextItem5, self._soloTextItem6,
                             self._soloTextItem7, self._soloTextItem8))
-        self._generateSolo()
+
+        scaleTypeLeftButton.clicked.connect(self._updateTextItems)
+        scaleTypeRightButton.clicked.connect(self._updateTextItems)
+        rootNoteLeftButton.clicked.connect(self._updateTextItems)
+        rootNoteRightButton.clicked.connect(self._updateTextItems)
+        soloLengthLeftButton.clicked.connect(self._updateTextItems)
+        soloLengthRightButton.clicked.connect(self._updateTextItems)
+        generateButton.clicked.connect(self._updateTextItems)
 
 ################################################################################
 
-    def _scaleTypeLeftButtonWasClicked(self):
+    def _solo(self):
         """
 
         """
 
-        self._scaleTypeIndex = (self._scaleTypeIndex-1)%len(SCALE_TYPES)
-        self._updateTextItems()
-
-################################################################################
-
-    def _scaleTypeRightButtonWasClicked(self):
-        """
-
-        """
-
-        self._scaleTypeIndex = (self._scaleTypeIndex+1)%len(SCALE_TYPES)
-        self._updateTextItems()
-
-################################################################################
-
-    def _rootNoteLeftButtonWasClicked(self):
-        """
-
-        """
-
-        self._rootNoteIndex = (self._rootNoteIndex-1)%len(ROOT_NOTES)
-        self._updateTextItems()
-
-################################################################################
-
-    def _rootNoteRightButtonWasClicked(self):
-        """
-
-        """
-
-        self._rootNoteIndex = (self._rootNoteIndex+1)%len(ROOT_NOTES)
-        self._updateTextItems()
-
-################################################################################
-
-    def _soloLengthLeftButtonWasClicked(self):
-        """
-
-        """
-
-        if self._soloLength > 1:
-            self._soloLength -= 1
-        else:
-            self._soloLength = self._maxSoloLength()
-        self._updateTextItems()
-
-################################################################################
-
-    def _soloLengthRightButtonWasClicked(self):
-        """
-
-        """
-
-        if self._soloLength < self._maxSoloLength():
-            self._soloLength += 1
-        else:
-            self._soloLength = 1
-        self._updateTextItems()
-
-################################################################################
-
-    def _generateSolo(self):
-        """
-
-        """
-
-        self._solo = ''
-        scale = SCALES[self._scaleTypeIndex][self._rootNoteIndex].split()[:-1]
-        notesCount = len(scale)
-        numbers = [i for i in range(10)]
+        solo = ''
+        scale = self._generator.scale.split()[:-1]
+        usedNumbers = self._generator.usedNumbers
+        segment = self._generator.soloSegment()
         scaleMap = {}
-
-        for _ in range(10-notesCount):
-            number = randint(0, 9)
-            while number not in numbers:
-                number = randint(0, 9)
-            numbers.remove(number)
-
-        for i in range(len(numbers)):
-            scaleMap[numbers[i]] = scale[i]
-
-        for i in range(self._soloLength):
-            number = randint(0, 9)
-            while number not in numbers:
-                number = randint(0, 9)
-            self._solo += scaleMap[number]
-            self._solo += ' '
-        self._updateTextItems()
+        for i in range(len(usedNumbers)):
+            scaleMap[usedNumbers[i]] = scale[i]
+        for number in segment:
+            solo += str(scaleMap[int(number)])
+            solo += ' '
+        return solo
 
 ################################################################################
 
@@ -276,39 +193,29 @@ class DataModel(QGraphicsScene):
 
         """
 
-        self._scaleTypeSelectedTextItem.setPlainText(SCALE_TYPES[self._scaleTypeIndex])
-        self._scaleTypeLeftTextItem.setPlainText(SCALE_TYPES[(self._scaleTypeIndex-1)%len(SCALE_TYPES)])
-        self._scaleTypeRightTextItem.setPlainText(SCALE_TYPES[(self._scaleTypeIndex+1)%len(SCALE_TYPES)])
-        self._rootNoteSelectedTextItem.setPlainText(ROOT_NOTES[self._rootNoteIndex])
-        self._rootNoteLeftTextItem.setPlainText(ROOT_NOTES[(self._rootNoteIndex-1)%len(ROOT_NOTES)])
-        self._rootNoteRightTextItem.setPlainText(ROOT_NOTES[(self._rootNoteIndex+1)%len(ROOT_NOTES)])
-        self._scaleItem.setScale(SCALES[self._scaleTypeIndex][self._rootNoteIndex])
-        self._soloLengthTextItem.setPlainText(str(self._soloLength))
+        self._scaleTypeSelectedTextItem.setPlainText(self._generator.scaleType)
+        self._scaleTypeLeftTextItem.setPlainText(self._generator.previousScaleType)
+        self._scaleTypeRightTextItem.setPlainText(self._generator.nextScaleType)
+        self._rootNoteSelectedTextItem.setPlainText(self._generator.rootNote)
+        self._rootNoteLeftTextItem.setPlainText(self._generator.previousRootNote)
+        self._rootNoteRightTextItem.setPlainText(self._generator.nextRootNote)
+        self._scaleItem.setScale(self._generator.scale)
+        self._soloLengthTextItem.setPlainText(str(self._generator.soloLength))
         temp = self._soloLengthMaxLabelTextItem.toPlainText().split()
-        temp[2] = str(self._maxSoloLength())
+        temp[2] = str(self._generator.maxSoloLength)
         text = ''
         for part in temp:
             text += ' '
             text += part
         self._soloLengthMaxLabelTextItem.setPlainText(text)
 
-        solo = self._solo.split()
+        solo = self._solo().split()
         lines = [solo[i:i+self.SOLO_NOTES_PER_LINE] for i in range(0, len(solo), self.SOLO_NOTES_PER_LINE)]
         lines = [' '.join(line) for line in lines]
         for item in self._soloAreas[7]:
             item.setPlainText('')
         for i in range(len(lines)):
             self._soloAreas[len(lines)-1][i].setPlainText(lines[i])
-
-################################################################################
-
-    def _maxSoloLength(self):
-        """
-
-        """
-
-        # TODO: not implemented yet
-        return 128
 
 ################################################################################
 
