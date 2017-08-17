@@ -255,6 +255,6 @@ class PiGenerator(object):
         segmentIndex = randint(0, len(segments)-1)
         segment = segments[segmentIndex]
         startIndex = randint(0, len(segment)-self._soloLength)
-        return segment[startIndex:startIndex+self._soloLength-1]
+        return segment[startIndex:startIndex+self._soloLength]
 
 ################################################################################
