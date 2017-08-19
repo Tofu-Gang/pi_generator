@@ -1,10 +1,10 @@
 __author__ = 'Tofu Gang'
 
 from PyQt5.QtWidgets import QGraphicsScene
-from PyQt5.QtCore import QRectF, QPointF, Qt
+from PyQt5.QtCore import pyqtSignal as Signal, QRectF, QPointF, Qt
 from math import pi, sin
 from src.triangleButton import TriangleButton
-from src.generateButton import GenerateButton
+from src.button import Button
 from src.textItem import TextItem
 from src.scaleTextItem import ScaleTextItem
 from src.pi import PiGenerator
@@ -14,6 +14,7 @@ from src.pi import PiGenerator
 ################################################################################
 
 class DataModel(QGraphicsScene):
+    aboutButtonClicked = Signal()
     SCENE_WIDTH = 798
     SCENE_HEIGHT = 598
 
@@ -41,6 +42,13 @@ class DataModel(QGraphicsScene):
     SOLO_LENGTH_POS = QPointF(0, -SCENE_HEIGHT/10+SCENE_HEIGHT/20)
 
     GENERATE_BUTTON_POS = QPointF(0, SCENE_HEIGHT/20)
+    GENERATE_BUTTON_WIDTH = 150
+    GENERATE_BUTTON_HEIGHT = 40
+
+    ABOUT_BUTTON_POS = QPointF(250, SCENE_HEIGHT/20)
+    ABOUT_BUTTON_WIDTH = 40
+    ABOUT_BUTTON_HEIGHT = 40
+
     SOLO_NOTES_PER_LINE = 18
     SOLO_POS_1 = QPointF(0, SCENE_HEIGHT/10+SCENE_HEIGHT/40)
     SOLO_POS_2 = QPointF(0, SCENE_HEIGHT/10+SCENE_HEIGHT/20+SCENE_HEIGHT/40)
@@ -117,9 +125,14 @@ class DataModel(QGraphicsScene):
         self.addItem(soloLengthRightButton)
 
         # generate button
-        generateButton = GenerateButton()
+        generateButton = Button('Generate', self.GENERATE_BUTTON_WIDTH, self.GENERATE_BUTTON_HEIGHT)
         generateButton.setPos(self.GENERATE_BUTTON_POS)
         self.addItem(generateButton)
+
+        # about button
+        aboutButton = Button('?', self.ABOUT_BUTTON_WIDTH, self.ABOUT_BUTTON_HEIGHT)
+        aboutButton.setPos(self.ABOUT_BUTTON_POS)
+        self.addItem(aboutButton)
 
         # solo
         self._soloTextItem1 = TextItem('', TextItem.CENTER, self.SOLO_POS_1)
@@ -166,6 +179,7 @@ class DataModel(QGraphicsScene):
         soloLengthLeftButton.clicked.connect(self._updateTextItems)
         soloLengthRightButton.clicked.connect(self._updateTextItems)
         generateButton.clicked.connect(self._updateTextItems)
+        aboutButton.clicked.connect(self.aboutButtonClicked)
 
 ################################################################################
 
